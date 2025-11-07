@@ -58,7 +58,7 @@ Example tsconfig.json changes:
 ```json
 {
   "compilerOptions": {
-    "target": "ES2019",
+    "target": "ES2024",
     "module": "CommonJS",
     "moduleResolution": "node",
     "outDir": "dist",
@@ -76,6 +76,15 @@ Example tsconfig.json changes:
   "exclude": ["node_modules", "dist"]
 }
 ```
+
+What these do (short):
+- target/module/moduleResolution: compile for Node + CommonJS modules.
+- outDir/rootDir: keep compiled files in dist and source in src.
+- strict / noImplicitAny / forceConsistentCasingInFileNames: enable safer typing and consistent imports.
+- esModuleInterop / resolveJsonModule: ease interop with CommonJS and import JSON.
+- include/exclude: ensure tests and source are compiled while ignoring node_modules and build output.
+
+If you want this README to reflect the exact changes you made, paste the contents of your tsconfig.json or give permission to read it and I will update this section accordingly.
 
 ## VS Code configuration
 
@@ -101,45 +110,36 @@ Example files to add (place under .vscode/):
   "eslint.validate": ["javascript", "typescript"]
 }
 `````
-
-What these do (short):
-- target/module/moduleResolution: compile for Node + CommonJS modules.
-- outDir/rootDir: keep compiled files in dist and source in src.
-- strict / noImplicitAny / forceConsistentCasingInFileNames: enable safer typing and consistent imports.
-- esModuleInterop / resolveJsonModule: ease interop with CommonJS and import JSON.
-- include/exclude: ensure tests and source are compiled while ignoring node_modules and build output.
-
-If you want this README to reflect the exact changes you made, paste the contents of your tsconfig.json or give permission to read it and I will update this section accordingly.
-
 // filepath: /home/murta/Projects/fs/a3/ecommerce/.vscode/launch.json
 {
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug (ts-node)",
       "type": "node",
+      "name": "debug nodejs ecommerce",
       "request": "launch",
-      "runtimeExecutable": "node",
-      "runtimeArgs": [
-        "-r",
-        "ts-node/register",
-        "-r",
-        "tsconfig-paths/register"
+      "program": "${workspaceFolder}/src/index.ts",
+      "preLaunchTask": "tsc: build - tsconfig.json",
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "type": "node",
+      "name": "vscode-jest-tests.v2.ecommerce",
+      "request": "launch",
+      "args": [
+          "--runInBand",
+          "--watchAll=false"
       ],
-      "args": ["${workspaceFolder}/src/index.ts"],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"]
-    },
-    {
-      "name": "Debug (compiled)",
-      "type": "node",
-      "request": "launch",
-      "program": "${workspaceFolder}/dist/index.js",
-      "preLaunchTask": "tsc: build - tsconfig.json",
-      "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal"
+      "program": "${workspaceFolder}/node_modules/.bin/jest",
+      "windows": {
+          "program": "${workspaceFolder}/node_modules/jest/bin/jest"
+      }
     }
   ]
 }
@@ -158,14 +158,19 @@ This is the code block that represents the suggested code change:
 ```
 
 This is the code block that represents the suggested code change:
-```typescript
+```javascript
 // filepath: /home/murta/Projects/fs/a3/ecommerce/jest.config.js
+const { createDefaultPreset } = require("ts-jest");
+
+const tsJestTransformCfg = createDefaultPreset().transform;
+
+/** @type {import("jest").Config} **/
 module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
-  roots: ['<rootDir>/src', '<rootDir>/__tests__'],
-  collectCoverage: true,
-  coverageDirectory: 'coverage'
+  testEnvironment: "node",
+  testPathIgnorePatterns: ["<rootDir>/dist/", "<rootDir>/node_modules/"],
+  transform: {
+    ...tsJestTransformCfg,
+  },
 };
 ```
 
